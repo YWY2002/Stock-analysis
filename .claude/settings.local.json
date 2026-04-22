@@ -8,7 +8,8 @@
       "Bash(python -c \"import ast; ast.parse\\(open\\('main.py'\\).read\\(\\)\\); print\\('OK'\\)\")",
       "Bash(go version *)",
       "Bash(npm ls *)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(npm uninstall *)"
     ]
   }
 }

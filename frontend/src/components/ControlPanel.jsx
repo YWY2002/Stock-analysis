@@ -12,9 +12,25 @@ const INTERVALS = [
   { value: '1month', label: '1M' },
 ];
 
-export default function ControlPanel({ onSubmit, loading, mas, onAddMa, onUpdateMa, onRemoveMa }) {
-  const [symbol, setSymbol] = useState('AAPL');
-  const [interval, setInterval] = useState('1day');
+const MA_TYPES = [
+  { value: 'sma', label: 'SMA' },
+  { value: 'smma', label: 'SMMA' },
+];
+
+export default function ControlPanel({
+  onSubmit,
+  loading,
+  initialSymbol = 'AAPL',
+  initialInterval = '1day',
+  mas,
+  maType,
+  onChangeMaType,
+  onAddMa,
+  onUpdateMa,
+  onRemoveMa,
+}) {
+  const [symbol, setSymbol] = useState(initialSymbol);
+  const [interval, setInterval] = useState(initialInterval);
 
   const handleSubmit = (e) => {
     if (e) e.preventDefault();
@@ -29,9 +45,7 @@ export default function ControlPanel({ onSubmit, loading, mas, onAddMa, onUpdate
     }
   };
 
-  const handleTypeChange = (id, type) => {
-    onUpdateMa(id, { type });
-  };
+  const activeLabel = MA_TYPES.find((t) => t.value === maType)?.label ?? 'MA';
 
   return (
     <div className="control-panel-wrap">
@@ -55,17 +69,21 @@ export default function ControlPanel({ onSubmit, loading, mas, onAddMa, onUpdate
       </form>
 
       <div className="ma-panel">
-        <span className="ma-label">MA:</span>
+        <span className="ma-label">MA type:</span>
+        <select
+          className="ma-type-select"
+          value={maType}
+          onChange={(e) => onChangeMaType(e.target.value)}
+        >
+          {MA_TYPES.map((t) => (
+            <option key={t.value} value={t.value}>{t.label}</option>
+          ))}
+        </select>
+
         {mas.map((ma) => (
           <div key={ma.id} className="ma-chip">
             <span className="ma-swatch" style={{ background: ma.color }} />
-            <select
-              value={ma.type}
-              onChange={(e) => handleTypeChange(ma.id, e.target.value)}
-            >
-              <option value="sma">SMA</option>
-              <option value="smma">SMMA</option>
-            </select>
+            <span className="ma-chip-label">{activeLabel}</span>
             <input
               type="number"
               min="1"
@@ -83,7 +101,7 @@ export default function ControlPanel({ onSubmit, loading, mas, onAddMa, onUpdate
             </button>
           </div>
         ))}
-        <button type="button" className="ma-add" onClick={onAddMa}>+ Add MA</button>
+        <button type="button" className="ma-add" onClick={onAddMa}>+ Add {activeLabel}</button>
       </div>
     </div>
   );
