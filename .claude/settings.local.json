@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm create *)",
+      "Bash(npm install *)",
+      "Bash(npx vite *)",
+      "Bash(go build *)",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('main.py'\\).read\\(\\)\\); print\\('OK'\\)\")",
+      "Bash(go version *)",
+      "Bash(npm ls *)",
+      "Bash(npm run *)"
+    ]
+  }
+}
