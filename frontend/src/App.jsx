@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import ControlPanel from './components/ControlPanel';
 import ChartContainer from './components/ChartContainer';
+import OptionsView from './components/OptionsView';
 import { fetchIndicators } from './services/api';
 import { pickMaColor } from './utils/chartConfig';
 import { loadState, saveState } from './utils/storage';
@@ -18,7 +19,14 @@ const makeMa = (period, usedColors, type = 'sma') => ({
   color: pickMaColor(usedColors),
 });
 
+const TABS = [
+  { id: 'stocks', label: 'Stocks' },
+  { id: 'options', label: 'Options' },
+  { id: 'analysis', label: 'Analysis' },
+];
+
 export default function App() {
+  const [activeTab, setActiveTab] = useState('stocks');
   const [data, setData] = useState(cached.data ?? null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -79,39 +87,62 @@ export default function App() {
 
   return (
     <div className="app">
-      <header>
-        <h1>Stock Analysis</h1>
+      <header className="top-nav">
+        <h1 className="brand">Stock Analysis</h1>
+        <nav className="tabs" role="tablist">
+          {TABS.map((t) => (
+            <button
+              key={t.id}
+              role="tab"
+              aria-selected={activeTab === t.id}
+              className={`tab ${activeTab === t.id ? 'tab-active' : ''}`}
+              onClick={() => setActiveTab(t.id)}
+            >
+              {t.label}
+            </button>
+          ))}
+        </nav>
       </header>
 
-      <ControlPanel
-        onSubmit={handleSubmit}
-        loading={loading}
-        initialSymbol={lastSymbol}
-        initialInterval={lastInterval}
-        mas={mas}
-        maType={maType}
-        onChangeMaType={changeMaType}
-        onAddMa={addMa}
-        onUpdateMa={updateMa}
-        onRemoveMa={removeMa}
-      />
-
-      {error && <div className="error-banner">{error}</div>}
-
-      {data && (
+      {activeTab === 'stocks' && (
         <>
-          <h2>{currentSymbol} &mdash; {data.interval}</h2>
-          <ChartContainer
-            priceData={data.price_data}
-            indicators={data.indicators}
+          <ControlPanel
+            onSubmit={handleSubmit}
+            loading={loading}
+            initialSymbol={lastSymbol}
+            initialInterval={lastInterval}
             mas={mas}
             maType={maType}
+            onChangeMaType={changeMaType}
+            onAddMa={addMa}
+            onUpdateMa={updateMa}
+            onRemoveMa={removeMa}
           />
+
+          {error && <div className="error-banner">{error}</div>}
+
+          {data && (
+            <>
+              <h2>{currentSymbol} &mdash; {data.interval}</h2>
+              <ChartContainer
+                priceData={data.price_data}
+                indicators={data.indicators}
+                mas={mas}
+                maType={maType}
+              />
+            </>
+          )}
+
+          {!data && !loading && !error && (
+            <div className="placeholder">Enter a ticker symbol and click Analyze to get started.</div>
+          )}
         </>
       )}
 
-      {!data && !loading && !error && (
-        <div className="placeholder">Enter a ticker symbol and click Analyze to get started.</div>
+      {activeTab === 'options' && <OptionsView />}
+
+      {activeTab === 'analysis' && (
+        <div className="placeholder">Analysis view coming soon.</div>
       )}
     </div>
   );

@@ -13,6 +13,10 @@ export default defineConfig({
         target: 'http://localhost:8001',
         rewrite: (path) => path.replace(/^\/api\/ticker/, '/ticker'),
       },
+      '/api/options': {
+        target: 'http://localhost:8003',
+        rewrite: (path) => path.replace(/^\/api\/options/, ''),
+      },
     },
   },
 })

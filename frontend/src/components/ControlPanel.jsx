@@ -14,6 +14,7 @@ const INTERVALS = [
 
 const MA_TYPES = [
   { value: 'sma', label: 'SMA' },
+  { value: 'ema', label: 'EMA' },
   { value: 'smma', label: 'SMMA' },
 ];
 

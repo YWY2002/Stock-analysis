@@ -16,6 +16,11 @@ if [ -z "$TWELVE_DATA_API_KEY" ]; then
   exit 1
 fi
 
+if [ -z "$POLYGON_API_KEY" ]; then
+  echo "ERROR: POLYGON_API_KEY not set. Copy .env.example to .env and add your key."
+  exit 1
+fi
+
 # Kill all child processes on exit
 trap 'kill 0' EXIT
 
@@ -29,6 +34,11 @@ cd indicator-service
 go run . &
 cd ..
 
+echo "Starting Option Chain Service (Python :8003)..."
+cd option-chain-service
+python -m uvicorn main:app --host 0.0.0.0 --port 8003 &
+cd ..
+
 echo "Starting Frontend (Vite :5173)..."
 cd frontend
 npm run dev &
@@ -36,9 +46,10 @@ cd ..
 
 echo ""
 echo "All services started:"
-echo "  Frontend:   http://localhost:5173"
-echo "  Ticker:     http://localhost:8001"
-echo "  Indicators: http://localhost:8002"
+echo "  Frontend:     http://localhost:5173"
+echo "  Ticker:       http://localhost:8001"
+echo "  Indicators:   http://localhost:8002"
+echo "  Option Chain: http://localhost:8003"
 echo ""
 echo "Press Ctrl+C to stop all services."
 wait

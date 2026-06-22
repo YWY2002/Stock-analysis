@@ -6,6 +6,48 @@ import { loadDrawings, saveDrawings } from '../utils/storage';
 
 registerKlineExtensions();
 
+function fmtTime(ts) {
+  const d = new Date(ts);
+  const pad = (n) => String(n).padStart(2, '0');
+  const date = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  if (d.getHours() === 0 && d.getMinutes() === 0) return date;
+  return `${date} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function fmtVol(v) {
+  if (v == null) return '';
+  const abs = Math.abs(v);
+  if (abs >= 1e9) return (v / 1e9).toFixed(2) + 'B';
+  if (abs >= 1e6) return (v / 1e6).toFixed(2) + 'M';
+  if (abs >= 1e3) return (v / 1e3).toFixed(2) + 'K';
+  return String(v);
+}
+
+function buildCandleTooltip({ prev, current }) {
+  // Base for % change: prior close if we have it, else this candle's open
+  // (so the first bar still shows something sensible instead of blank).
+  const base = prev?.close ?? current.open;
+  const diff = current.close - base;
+  const pct = base !== 0 ? (diff / base) * 100 : 0;
+  const sign = diff >= 0 ? '+' : '';
+  const color = diff >= 0 ? CHART_COLORS.candleUp : CHART_COLORS.candleDown;
+  return [
+    { title: 'time', value: fmtTime(current.timestamp) },
+    { title: 'open', value: current.open.toFixed(2) },
+    { title: 'high', value: current.high.toFixed(2) },
+    { title: 'low', value: current.low.toFixed(2) },
+    { title: 'close', value: current.close.toFixed(2) },
+    // { title: 'volume', value: fmtVol(current.volume) },
+    {
+      title: 'change',
+      value: {
+        text: `${sign}${diff.toFixed(2)} (${sign}${pct.toFixed(2)}%)`,
+        color,
+      },
+    },
+  ];
+}
+
 const KLINE_STYLES = {
   grid: {
     horizontal: { color: CHART_COLORS.grid },
@@ -31,7 +73,10 @@ const KLINE_STYLES = {
         text: { borderColor: 'transparent' },
       },
     },
-    tooltip: { showRule: 'follow_cross' },
+    tooltip: {
+      showRule: 'follow_cross',
+      custom: buildCandleTooltip,
+    },
   },
   indicator: {
     tooltip: { showRule: 'follow_cross' },
@@ -53,10 +98,25 @@ const KLINE_STYLES = {
   separator: { color: CHART_COLORS.grid, size: 1, fill: true },
 };
 
+const VOL_STYLES = {
+  bars: [
+    {
+      style: 'fill',
+      borderStyle: 'solid',
+      borderSize: 1,
+      borderDashedValue: [2, 2],
+      upColor: 'rgba(38, 166, 154, 0.8)',
+      downColor: 'rgba(239, 83, 80, 0.8)',
+      noChangeColor: 'rgba(136, 136, 136, 0.8)',
+    },
+  ],
+};
+
 const SUB_PANES = [
-  { indicator: 'AD', label: 'A/D' },
-  { indicator: 'OBV', label: 'OBV' },
-  { indicator: 'VWAP', label: 'VWAP' },
+  { indicator: 'VOL', label: 'Volume', calcParams: [], styles: VOL_STYLES },
+  { indicator: 'AD', label: 'A/D', color: CHART_COLORS.ad },
+  { indicator: 'OBV', label: 'OBV', color: CHART_COLORS.obv },
+  { indicator: 'VWAP', label: 'VWAP', color: CHART_COLORS.vwap },
 ];
 
 function toKlineList(priceData, indicators) {
@@ -103,9 +163,14 @@ const Chart = forwardRef(function Chart({ priceData, indicators, mas, maType }, 
     if (!chart) return;
     chartRef.current = chart;
 
-    // Create the three indicator sub-panes (data populated when priceData lands).
+    // Create the indicator sub-panes (data populated when priceData lands).
     for (const sp of SUB_PANES) {
-      const id = chart.createIndicator(sp.indicator, false, { height: 100 });
+      const config = { name: sp.indicator };
+      if (sp.calcParams) config.calcParams = sp.calcParams;
+      config.styles = sp.styles ?? {
+        lines: [{ style: 'solid', smooth: false, color: sp.color, size: 2, dashedValue: [2, 2] }],
+      };
+      const id = chart.createIndicator(config, false, { height: 100 });
       if (id) subPaneIdsRef.current[sp.indicator] = id;
     }
 
@@ -140,13 +205,15 @@ const Chart = forwardRef(function Chart({ priceData, indicators, mas, maType }, 
     const chart = chartRef.current;
     if (!chart) return;
 
-    // Always remove both possible overlays first to avoid stale lines.
+    // Always remove all possible overlays first to avoid stale lines.
     chart.removeIndicator('candle_pane', 'MA');
+    chart.removeIndicator('candle_pane', 'EMA');
     chart.removeIndicator('candle_pane', 'SMMA');
 
     if (!mas?.length) return;
 
-    const indicatorName = maType === 'smma' ? 'SMMA' : 'MA';
+    const indicatorName =
+      maType === 'smma' ? 'SMMA' : maType === 'ema' ? 'EMA' : 'MA';
     const calcParams = mas.map((m) => m.period);
     // klinecharts merges adjacent line segments and reads style.dashedValue[0/1],
     // style.style, style.smooth, style.color, style.size — every field must exist

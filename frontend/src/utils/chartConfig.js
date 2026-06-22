@@ -6,8 +6,8 @@ export const CHART_COLORS = {
   candleUp: '#26a69a',
   candleDown: '#ef5350',
   volume: 'rgba(76, 175, 80, 0.3)',
-  ad: '#2196f3',
-  obv: '#ff9800',
+  ad: '#4dd0e1',
+  obv: '#ffb74d',
   vwap: '#e040fb',
 };
 
